@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-gnu
+
+      - name: Install MinGW cross-compiler
+        run: sudo apt-get install -y gcc-mingw-w64-x86-64
+
+      - name: Build Linux
+        run: cargo build --release
+
+      - name: Build Windows
+        run: cargo build --release --target x86_64-pc-windows-gnu
+
+      - name: Package Linux
+        run: |
+          mkdir -p dist/linux
+          cp target/release/convert-to-jpg dist/linux/
+          cp config.toml dist/linux/
+          cp LICENSE dist/linux/
+          tar -czf dist/convert-to-jpg-linux-x86_64.tar.gz -C dist/linux .
+
+      - name: Package Windows
+        run: |
+          mkdir -p dist/windows
+          cp target/x86_64-pc-windows-gnu/release/convert-to-jpg.exe dist/windows/
+          cp config.toml dist/windows/
+          cp LICENSE dist/windows/
+          zip -j dist/convert-to-jpg-windows-x86_64.zip dist/windows/*
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/convert-to-jpg-linux-x86_64.tar.gz
+            dist/convert-to-jpg-windows-x86_64.zip
+          generate_release_notes: true
