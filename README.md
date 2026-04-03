@@ -4,6 +4,8 @@ A fast, self-contained command-line tool that converts image files to JPEG. It s
 
 I wanted a very simple library with no external dependencies and no extra fluff. It literally just does as advertised (with no advertisements, heh).
 
+<img width="774" height="458" alt="image" src="https://github.com/user-attachments/assets/4e3b6b1f-dbc7-4566-ba4b-fa282b558e8a" />
+
 ## Supported Formats
 
 PNG, BMP, TIFF, TIF, WebP, GIF, AVIF, HEIC, HEIF
