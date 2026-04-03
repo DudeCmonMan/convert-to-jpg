@@ -1,0 +1,9 @@
+[conversion]
+quality = 90
+delete_originals = false
+# Output folder for converted files. Leave empty "" to place JPEGs next to the source files.
+output_folder = ""
+max_parallel = 4
+
+[formats]
+extensions = ["png", "bmp", "tiff", "tif", "webp", "gif", "avif", "heic", "heif"]
