@@ -2,6 +2,8 @@
 
 A fast, self-contained command-line tool that converts image files to JPEG. It supports a wide range of formats including PNG, BMP, TIFF, WebP, GIF, AVIF, HEIC, and HEIF. HEIC/HEIF conversion is handled by an embedded FFmpeg binary, so no external dependencies are needed.
 
+I wanted a very simple library with no external dependencies and no extra fluff. It literally just does as advertised (with no advertisements, heh).
+
 ## Supported Formats
 
 PNG, BMP, TIFF, TIF, WebP, GIF, AVIF, HEIC, HEIF
