@@ -2,6 +2,7 @@
 name = "convert_to_jpg"
 version = "0.1.0"
 edition = "2024"
+license = "GPL-3.0-or-later"
 
 [[bin]]
 name = "convert-to-jpg"
@@ -15,4 +16,4 @@ anyhow = "1.0"
 image = "0.25"
 cursive = { version = "0.21", default-features = false, features = ["crossterm-backend"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
-libheif-rs = ">=0.1, <1.0"
+lzma-rs = { version = "0.3", default-features = false }

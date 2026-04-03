@@ -107,47 +107,37 @@ fn convert_standard(source: &Path, out_path: &Path, quality: u8) -> anyhow::Resu
 }
 
 fn convert_heic(source: &Path, out_path: &Path, quality: u8) -> anyhow::Result<()> {
-    use image::codecs::jpeg::JpegEncoder;
-    use image::{ImageBuffer, Rgb};
-    use libheif_rs::{ColorSpace, HeifContext, LibHeif, RgbChroma};
-    use std::fs::File;
-    use std::io::BufWriter;
-
     ensure_parent(out_path)?;
 
-    let ctx = HeifContext::read_from_file(
-        source.to_str().ok_or_else(|| anyhow::anyhow!("non-UTF8 path"))?,
-    )?;
-    let handle = ctx.primary_image_handle()?;
-    let lib = LibHeif::new();
-    let decoded = lib.decode(&handle, ColorSpace::Rgb(RgbChroma::Rgb), None)?;
+    // Map quality 0-100 → ffmpeg -q:v 2-31 (2=best, 31=worst)
+    let qv = (31.0 - (quality as f32 / 100.0) * 29.0).round() as u32;
+    let qv = qv.clamp(2, 31);
 
-    let planes = decoded.planes();
-    let interleaved = planes
-        .interleaved
-        .ok_or_else(|| anyhow::anyhow!("no interleaved plane in HEIC image"))?;
+    let status = std::process::Command::new(crate::ffmpeg::ffmpeg_path())
+        .args([
+            "-v", "error",
+            "-y",
+            "-i", source.to_str().ok_or_else(|| anyhow::anyhow!("non-UTF8 path"))?,
+            "-update", "1",
+            "-q:v", &qv.to_string(),
+            out_path.to_str().ok_or_else(|| anyhow::anyhow!("non-UTF8 output path"))?,
+        ])
+        .output()
+        .map_err(|e| anyhow::anyhow!("failed to run ffmpeg: {e}"))?;
 
-    let width = decoded.width();
-    let height = decoded.height();
-    let stride = interleaved.stride;
-    let data = interleaved.data;
-
-    // Copy row-by-row to strip any stride padding
-    let mut pixels: Vec<u8> = Vec::with_capacity((width * height * 3) as usize);
-    for row in 0..height as usize {
-        let start = row * stride;
-        let end = start + width as usize * 3;
-        pixels.extend_from_slice(&data[start..end]);
+    if !status.status.success() {
+        let stderr = String::from_utf8_lossy(&status.stderr);
+        let summary: Vec<&str> = stderr.lines()
+            .filter(|l| !l.trim().is_empty())
+            .collect();
+        let msg = if summary.is_empty() {
+            "ffmpeg exited with non-zero status".to_string()
+        } else {
+            summary.join("; ")
+        };
+        anyhow::bail!("{}", msg);
     }
 
-    let img: ImageBuffer<Rgb<u8>, Vec<u8>> =
-        ImageBuffer::from_raw(width, height, pixels)
-            .ok_or_else(|| anyhow::anyhow!("failed to construct image buffer from HEIC pixels"))?;
-
-    let file = File::create(out_path)?;
-    let writer = BufWriter::new(file);
-    let encoder = JpegEncoder::new_with_quality(writer, quality);
-    img.write_with_encoder(encoder)?;
     Ok(())
 }
 

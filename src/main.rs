@@ -1,5 +1,6 @@
 mod config;
 mod converter;
+mod ffmpeg;
 mod tui;
 mod utils;
 
@@ -22,21 +23,35 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    eprintln!("convert-to-jpg {} starting", BUILD_VERSION);
+
     let args = Args::parse();
 
-    let (config, config_path) = config::load()?;
+    let (config, config_path) = config::load()
+        .map_err(|e| { eprintln!("Failed to load config: {e}"); e })?;
     eprintln!("Config: {}", config_path.display());
 
     // Collect all files from provided paths
     let mut all_files: Vec<PathBuf> = Vec::new();
     for path in &args.paths {
-        all_files.extend(utils::collect_files(path));
+        if !path.exists() {
+            eprintln!("Warning: path does not exist: {}", path.display());
+            continue;
+        }
+        let collected = utils::collect_files(path);
+        eprintln!("Collected {} file(s) from {}", collected.len(), path.display());
+        all_files.extend(collected);
     }
 
     // Filter to convertible formats
+    let before = all_files.len();
     all_files.retain(|f| utils::is_convertible(f, &config.formats.extensions));
+    if all_files.len() < before {
+        eprintln!("{} file(s) skipped (unsupported format)", before - all_files.len());
+    }
 
     if all_files.is_empty() {
+        eprintln!("Supported extensions: {}", config.formats.extensions.join(", "));
         println!("No convertible image files found.");
         return Ok(());
     }

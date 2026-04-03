@@ -1,1 +1,4 @@
 /target
+build.sh
+assets/linux/ffmpeg
+assets/win/ffmpeg.exe
